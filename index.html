@@ -1,81 +1,129 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Website</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background: linear-gradient(45deg, #ff9a9e, #fad0c4);
-            color: black;
-            padding: 50px;
-        }
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            display: inline-block;
-        }
-        img {
-            max-width: 300px;
-            margin-top: 20px;
-            border-radius: 10px;
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Door + Audio Wobble System</title>
+
+<style>
+body {
+    margin: 0;
+    background: #111;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+.wrap {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    transform-origin: center;
+}
+
+img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+#wrap2 { display: none; }
+
+/* door zoom */
+.zoom {
+    transform: scale(12) rotate(10deg);
+    transition: transform 1.5s ease;
+}
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1 id="title">Welcome to My Website</h1>
-        <p id="content">This is a simple page that changes dynamically.</p>
-        <img id="image" src="default.jpg" alt="Placeholder Image">
-    </div>
 
-    <script>
-        // Fetch changes from Glitch
-        fetch("https://fluorescent-twisty-jaw.glitch.me/changes.log")
-            .then(response => response.text())
-            .then(data => {
-                const lines = data.trim().split("\n");
-                if (lines.length === 0) return;
+<!-- DOOR -->
+<div class="wrap" id="wrap1">
+    <img id="doorImg"
+    src="https://luxdoors.com/cdn/shop/products/F66_500x500.png?v=1635746031">
+</div>
 
-                // Get the latest change
-                const lastChange = lines[lines.length - 1];
-                const parts = lastChange.split(", ");
-                const change = {};
+<!-- BUTTON 2 -->
+<div class="wrap" id="wrap2">
+    <img id="btn2Img"
+    src="https://www.ercanotomasyon.com.tr/wp-content/uploads/2020/05/9578406936626-1.jpg">
+</div>
 
-                parts.forEach(part => {
-                    const [key, value] = part.split(": ");
-                    change[key.toLowerCase()] = value;
-                });
+<script>
 
-                console.log("Applying change:", change);
+const sound1 = "https://www.myinstants.com/media/sounds/raaar_FerSY7o.mp3";
+const sound2 = "https://www.myinstants.com/media/sounds/invincible-edit-epic.mp3";
 
-                // Apply changes to the page
-                if (change.action === "add" && change.target === "text") {
-                    const newElement = document.createElement("p");
-                    newElement.innerText = change.value;
-                    document.body.appendChild(newElement);
-                } 
-                else if (change.action === "remove" && change.target === "text") {
-                    const element = document.getElementById("content");
-                    if (element) element.remove();
-                } 
-                else if (change.action === "change") {
-                    if (change.target === "text") {
-                        document.getElementById("content").innerText = change.value;
-                    } 
-                    else if (change.target === "background") {
-                        document.body.style.background = change.value;
-                    } 
-                    else if (change.target === "image") {
-                        document.getElementById("image").src = change.value;
-                    }
-                }
-            })
-            .catch(error => console.error("Error fetching changes:", error));
-    </script>
+const wrap1 = document.getElementById("wrap1");
+const wrap2 = document.getElementById("wrap2");
+
+const doorImg = document.getElementById("doorImg");
+const btn2Img = document.getElementById("btn2Img");
+
+let audio2;
+let wobbleInterval;
+
+/* ---------------- DOOR ---------------- */
+wrap1.onclick = () => {
+
+    const a = new Audio(sound1);
+    a.play();
+
+    // CHANGE IMAGE FIRST (IMPORTANT FIX)
+    doorImg.src = "data:image/jpeg;base64,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";
+
+    setTimeout(() => {
+        wrap1.classList.add("zoom");
+    }, 80);
+
+    setTimeout(() => {
+        wrap1.style.display = "none";
+        wrap2.style.display = "block";
+    }, 1500);
+};
+
+/* ---------------- WOBBLE ENGINE ---------------- */
+function startWobble() {
+    clearInterval(wobbleInterval);
+
+    wobbleInterval = setInterval(() => {
+        const t = Date.now();
+
+        const rot = Math.sin(t / 50) * 18;
+        const scale = 1 + Math.sin(t / 90) * 0.06;
+
+        wrap2.style.transform = `rotate(${rot}deg) scale(${scale})`;
+
+    }, 16);
+}
+
+function stopWobble() {
+    clearInterval(wobbleInterval);
+    wrap2.style.transform = "rotate(0deg) scale(1)";
+}
+
+/* ---------------- BUTTON 2 ---------------- */
+wrap2.onclick = () => {
+
+    if (!audio2) {
+        audio2 = new Audio(sound2);
+    }
+
+    audio2.currentTime = 0;
+    audio2.play();
+
+    startWobble();
+
+    audio2.onended = () => {
+        stopWobble();
+    };
+};
+
+</script>
+
 </body>
 </html>
